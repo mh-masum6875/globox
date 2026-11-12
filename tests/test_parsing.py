@@ -1,4 +1,6 @@
-from globox import AnnotationSet, BoxFormat
+from pathlib import Path
+
+from globox import Annotation, AnnotationSet, BoundingBox, BoxFormat
 from globox.utils import all_equal
 
 from . import constants as C
@@ -91,3 +93,31 @@ def tests_parsing():
     for i, s in enumerate(gts_sets):
         for b in s.all_boxes:
             assert b._confidence is None, f"dataset: {i}, Conf: {type(b._confidence)}"
+
+
+def test_parsing_files_with_byte_order_mark(tmp_path: Path):
+    # Some Windows editors save UTF-8 files with a byte order mark.
+    bom = b"\xef\xbb\xbf"
+
+    txt_dir = tmp_path / "txt"
+    txt_dir.mkdir()
+    (txt_dir / "image.txt").write_bytes(bom + b"0 0.5 0.5 0.2 0.2\n")
+    names_path = tmp_path / "obj.names"
+    names_path.write_bytes(bom + b"cat\ndog\n")
+
+    annotation = Annotation.from_yolo_v5(txt_dir / "image.txt", image_size=(200, 100))
+
+    assert [box.label for box in annotation.boxes] == ["0"]
+    assert AnnotationSet.parse_names_file(names_path) == {"0": "cat", "1": "dog"}
+
+    coco_path = tmp_path / "coco.json"
+    box = BoundingBox(label="cat", xmin=10.0, ymin=20.0, xmax=110.0, ymax=80.0)
+    reference = AnnotationSet(
+        [Annotation(image_id="image.jpg", image_size=(200, 100), boxes=[box])]
+    )
+    reference.save_coco(coco_path, auto_ids=True)
+    coco_path.write_bytes(bom + coco_path.read_bytes())
+
+    parsed = AnnotationSet.from_coco(coco_path)
+
+    assert [box.label for box in parsed.all_boxes] == ["cat"]

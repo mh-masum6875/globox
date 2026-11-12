@@ -122,7 +122,7 @@ class Annotation:
             image_id = path.with_suffix(image_extension).name
 
         try:
-            lines = path.read_text(encoding="utf-8").splitlines()
+            lines = path.read_text(encoding="utf-8-sig").splitlines()
         except OSError:
             raise FileParsingError(path, reason="cannot read file")
 
@@ -238,7 +238,7 @@ class Annotation:
         path = Path(file_path).expanduser().resolve()
 
         try:
-            with path.open(encoding="utf-8") as f:
+            with path.open(encoding="utf-8-sig") as f:
                 root = et.parse(f).getroot()
         except (OSError, et.ParseError):
             raise ParsingError("Syntax error in imagenet annotation file.")
@@ -281,7 +281,7 @@ class Annotation:
             shape_types.add("polygon")
 
         try:
-            with path.open(encoding="utf-8") as f:
+            with path.open(encoding="utf-8-sig") as f:
                 content = json.load(f)
                 if "imageData" in content:
                     del content["imageData"]
@@ -374,7 +374,7 @@ class Annotation:
             image_id = path.with_suffix(image_extension).name
 
         try:
-            lines = path.read_text(encoding="utf-8").splitlines()
+            lines = path.read_text(encoding="utf-8-sig").splitlines()
         except OSError:
             raise FileParsingError(path, reason="cannot read file")
 
